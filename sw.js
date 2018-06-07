@@ -1,53 +1,34 @@
-var CACHE = 'cache-v1';
+//This is the "Offline page" service worker
 
-this.addEventListener('install', function(event) {
-  //console.log('The service worker is being installed');
+//Install stage sets up the offline page in the cache and opens a new cache
+self.addEventListener('install', function(event) {
+  var offlinePage = new Request('index.php');
   event.waitUntil(
-    caches.open(CACHE).then(function(cache) {
-      return cache.addAll([
-        'https://fonts.googleapis.com/css?family=Open+Sans:100,300,400,600',
-        'https://cdn.aioneframework.com/assets/css/aione.min.css',
-        'https://cdn.aioneframework.com/assets/js/vendor.min..js',
-        'https://cdn.aioneframework.com/assets/js/aione.min.js', 
-        'index.html',
-      ]);
-    })
-  );
-});
-
-this.addEventListener('fetch', function(event) {
-  //console.log('The service worker is serving the asset.');
-  event.respondWith(fromCache(event.request));
-  
-  event.waitUntil(
-    update(event.request).then(refresh)
-  );
-});
-
-function refresh(response) {
-  return self.clients.matchAll().then(function (clients) {
-    clients.forEach(function (client) {
-      var message = {
-        type: 'refresh',
-        url: response.url,
-      };
-      client.postMessage(JSON.stringify(message));
-    });
-  });
-}
-
-function update(request) {
-  return caches.open(CACHE).then(function (cache) {
-    return fetch(request).then(function (response) {
-      return cache.put(request, response.clone()).then(function () {
-        return response;
+    fetch(offlinePage).then(function(response) {
+      return caches.open('aione-offline').then(function(cache) {
+        console.log('Cached offline page during Install '+ response.url);
+        return cache.put(offlinePage, response);
       });
-    });
-  });
-}
+  }));
+});
 
-function fromCache(request) {
-  return caches.open(CACHE).then(function (cache) {
-    return cache.match(request);
+//If any fetch fails, it will show the offline page.
+//Maybe this should be limited to HTML documents?
+self.addEventListener('fetch', function(event) {
+  event.respondWith(
+    fetch(event.request).catch(function(error) {
+      console.error( 'Network request Failed. Serving offline page ' + error );
+      return caches.open('aione-offline').then(function(cache) {
+        return cache.match('index.php');
+      });
+    }
+  ));
+});
+
+//This is a event that can be fired from your page to tell the SW to update the offline page
+self.addEventListener('refreshOffline', function(response) {
+  return caches.open('aione-offline').then(function(cache) {
+    console.log('Offline page updated from refreshOffline event: '+ response.url);
+    return cache.put(offlinePage, response);
   });
-}
+});

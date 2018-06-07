@@ -1,11 +1,12 @@
 {
   "name": "Aione Experiments",
+  "description": "Aione Experiments Application",
   "short_name": "EXP",
   "theme_color": "#168dc5",
   "background_color": "#ffffff",
-  "display": "browser",
-  "Scope": "/",
-  "start_url": "/index.html",
+  "display": "fullscreen",
+  "scope": "/",
+  "start_url": "/index.php",
   "icons": [
     {
       "src": "images/icons/icon-72x72.png",
